@@ -48,3 +48,29 @@ window hides while the preview is visible.
 This ad-hoc signed build may require Screen Recording permission again
 after an update. A consistent Developer ID signing identity is needed
 for a reliable distribution identity across future releases.
+
+## Screen Recording permissions and the launcher
+
+Screen Recording permission is required to read the selected viewer digits.
+The app uses ScreenCaptureKit and local text recognition. It does not save
+screenshots or record system audio, although macOS may mention audio in its
+standard permission dialog. Allow Resolve Timecode Window under System
+Settings → Privacy & Security → Screen & System Audio Recording, then
+quit and reopen the app. System wording varies by macOS version.
+
+The optional auto-launch feature is being tested in 1.7.x builds; it is
+not included in the currently published 1.6.13 app. Its helper,
+ResolveWatcher (display name Resolve Timecode Launcher), detects whether
+Resolve is running. The helper contains no screen-capture or audio-capture
+code. In early 1.7.x builds macOS could attribute the main app's screen
+capture request to ResolveWatcher because of the launch mechanism.
+
+Build 1.7.5 separates the helper into its own app and opens the main app
+through Launch Services. If a permission dialog still names ResolveWatcher,
+decline it and report the version and launch status. If already granted,
+disable that helper's Screen Recording entry. Grant Screen Recording to
+Resolve Timecode Window. Background-helper approval under General →
+Login Items & Extensions is a separate permission used for automatic launch.
+
+Ad-hoc signed updates may need authorization again. Permission identity
+and naming on each macOS version still require testing.
