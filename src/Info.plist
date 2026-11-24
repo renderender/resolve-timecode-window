@@ -4,9 +4,10 @@
 <key>CFBundleExecutable</key><string>ResolveTimecodeWindow</string>
 <key>CFBundleIdentifier</key><string>local.resolve.timecodewindow</string>
 <key>CFBundleName</key><string>Resolve Timecode Window</string>
+<key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>1.6.13</string>
-<key>CFBundleVersion</key><string>20</string>
+<key>CFBundleShortVersionString</key><string>2.0</string>
+<key>CFBundleVersion</key><string>30</string>
 <key>LSUIElement</key><true/>
 <key>NSHighResolutionCapable</key><true/>
 <key>LSMinimumSystemVersion</key><string>14.0</string>

@@ -62,15 +62,26 @@ final class ViewerReader {
         }
     }
 
+    @discardableResult
+    func ensureScreenPermission() -> Bool {
+        guard !CGPreflightScreenCaptureAccess() else { return true }
+        let alert = NSAlert()
+        alert.messageText = "Screen Recording permission required"
+        alert.informativeText = "Allow Resolve Timecode Window in Privacy & Security → Screen & System Audio Recording. Then quit and reopen the app. The selected areas are processed locally."
+        alert.addButton(withTitle: "Open System Settings")
+        alert.addButton(withTitle: "Later")
+        if alert.runModal().rawValue == 1000,
+           let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+            NSWorkspace.shared.open(url)
+        }
+        return false
+    }
+
+    var hasSavedAreas: Bool { !crops.isEmpty }
+
     func pick(_ key: String) {
         finishSelection()
-        if !CGPreflightScreenCaptureAccess() && !CGRequestScreenCaptureAccess() {
-            let alert = NSAlert()
-            alert.messageText = "Allow Screen Recording"
-            alert.informativeText = "Allow Resolve Timecode Window under Privacy & Security → Screen & System Audio Recording, then restart the app."
-            alert.runModal()
-            return
-        }
+        guard ensureScreenPermission() else { return }
         stop()
         for screen in NSScreen.screens {
             guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else { continue }

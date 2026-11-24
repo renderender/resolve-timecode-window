@@ -1,5 +1,6 @@
 import Cocoa
 import Foundation
+import ServiceManagement
 
 final class TimecodePanel: NSPanel {
     var optionsMenu: NSMenu?
@@ -55,6 +56,11 @@ final class ResizeGrip: NSView {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private let resolveBundleID = "com.blackmagic-design.DaVinciResolve"
+    private let launchService = SMAppService.agent(plistName: "local.resolve.timecodewindow.watcher.plist")
+    private var launchCheckbox: NSButton?
+    private var sawResolve = false
+    private var resolveObserver: NSObjectProtocol?
     private var settingsWindow: NSWindow?
     private var ratePicker: NSPopUpButton?
     private var formatPicker: NSPopUpButton?
@@ -78,6 +84,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        if CommandLine.arguments.contains("--prepare-update") {
+            try? launchService.unregister()
+            NSApp.terminate(nil)
+            return
+        }
+        let restoringLaunch = UserDefaults.standard.bool(forKey: "RestoreLaunchAfterUpdate")
+        if restoringLaunch { try? launchService.unregister() }
+        if UserDefaults.standard.bool(forKey: "LaunchWithResolve"),
+           restoringLaunch || launchService.status == .notRegistered {
+            do {
+                try launchService.register()
+                UserDefaults.standard.removeObject(forKey: "RestoreLaunchAfterUpdate")
+            } catch {
+                NSLog("Could not restore automatic launch: %@", error.localizedDescription)
+            }
+        }
+        resolveObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] notification in
+            guard let self,
+                  self.launchService.status == .enabled || self.launchService.status == .requiresApproval,
+                  let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.bundleIdentifier == self.resolveBundleID else { return }
+            NSApp.terminate(nil)
+        }
         panel = TimecodePanel(contentRect: NSRect(x: 160, y: 450, width: 320, height: 200), styleMask: [.titled, .closable, .nonactivatingPanel, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         panel.openSettings = { [weak self] in self?.showSettings() }
         panel.title = "Timecode"
@@ -190,9 +221,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.menu = menu
         viewer.onValues = { [weak self] master, duration in self?.readViewer(master, duration) }
         viewer.start()
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.viewer.ensureScreenPermission()
+            if self.launchService.status == .requiresApproval { self.explainBackgroundPermission() }
+        }
         restartBridge()
         let watchdog = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
             guard let self = self else { return }
+            let resolveRunning = NSWorkspace.shared.runningApplications.contains {
+                $0.bundleIdentifier == self.resolveBundleID
+            }
+            if resolveRunning { self.sawResolve = true }
+            if self.sawResolve && !resolveRunning && self.launchService.status == .enabled {
+                NSApp.terminate(nil)
+                return
+            }
             let now = ProcessInfo.processInfo.systemUptime
             if now - self.lastUpdate > 3 { self.setDurationStale(true) }
             if self.task?.isRunning != true || now - max(self.lastUpdate, self.bridgeStarted) > 10 {
@@ -218,7 +262,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showSettings() {
         if settingsWindow == nil {
-            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 440),
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 490),
                                   styleMask: [.titled, .closable], backing: .buffered, defer: false)
             window.title = "Resolve Timecode Window — Settings"
             window.isReleasedWhenClosed = false
@@ -238,6 +282,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ])
             let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
             stack.addArrangedSubview(NSTextField(labelWithString: "Version " + version))
+            let launch = NSButton(checkboxWithTitle: "Launch and quit with DaVinci Resolve",
+                                  target: self, action: #selector(toggleResolveLink(_:)))
+            launchCheckbox = launch
+            stack.addArrangedSubview(launch)
             let rate = NSPopUpButton()
             for (value, title) in [(0, "Automatic (low load)"), (2, "2 reads / second"),
                                    (4, "4 reads / second"), (8, "8 reads / second")] {
@@ -275,10 +323,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.center()
             settingsWindow = window
         }
+        launchCheckbox?.state = launchService.status == .enabled || launchService.status == .requiresApproval ? .on : .off
         ratePicker?.selectItem(withTag: viewer.captureRate)
         formatPicker?.selectItem(at: min(2, max(0, UserDefaults.standard.integer(forKey: "DisplayMode"))))
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    private var launchStatusText: String {
+        switch launchService.status {
+        case .enabled: return "Enabled"
+        case .requiresApproval: return "Waiting for macOS approval"
+        case .notRegistered: return "Off"
+        case .notFound: return "Helper not found"
+        @unknown default: return "Unknown"
+        }
+    }
+
+    private func explainBackgroundPermission() {
+        let alert = NSAlert()
+        alert.messageText = "Background permission required"
+        alert.informativeText = "Allow Resolve Timecode Window in General → Login Items & Extensions. This enables the helper that starts the app with Resolve."
+        alert.addButton(withTitle: "Open System Settings")
+        alert.addButton(withTitle: "Later")
+        if alert.runModal().rawValue == 1000 {
+            SMAppService.openSystemSettingsLoginItems()
+        }
+    }
+
+    @objc private func toggleResolveLink(_ sender: NSButton) {
+        do {
+            if sender.state == .on {
+                guard Bundle.main.bundleURL.path.hasPrefix("/Applications/") ||
+                      Bundle.main.bundleURL.path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser
+                        .appendingPathComponent("Applications").path + "/") else {
+                    sender.state = .off
+                    let alert = NSAlert()
+                    alert.messageText = "Move the app to Applications first"
+                    alert.informativeText = "Keep one copy in Applications, reopen it there, then enable this option."
+                    alert.runModal()
+                    return
+                }
+                try launchService.register()
+                if launchService.status == .requiresApproval {
+                    explainBackgroundPermission()
+                }
+            } else {
+                try launchService.unregister()
+            }
+        } catch {
+            let alert = NSAlert(error: error)
+            alert.runModal()
+        }
+        sender.state = launchService.status == .enabled || launchService.status == .requiresApproval ? .on : .off
+        UserDefaults.standard.set(sender.state == .on, forKey: "LaunchWithResolve")
     }
 
     @objc private func changeSettingsRate(_ sender: NSPopUpButton) {
@@ -324,6 +422,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alert.messageText = "Resolve Timecode Window \(version)"
         alert.informativeText = """
         Build \(build)
+        Resolve auto-launch: \(launchStatusText)
+        Last helper launch: \(UserDefaults(suiteName: "local.resolve.timecodewindow")?.string(forKey: "LastHelperLaunch") ?? "No launch recorded")
         Capture rate: \(mode)
         Last Master TC capture + OCR: \(Int(viewer.lastReadMilliseconds)) ms
 

@@ -1,39 +1,40 @@
 # Resolve Timecode Window
 
-An independent community macOS utility displaying Master TC, In-Out Duration and Total Duration in a resizable floating window.
+An independent macOS utility showing **Master TC**, **In-Out Duration**
+and **Total Duration** in one resizable floating window.
 
-Developed for DaVinci Resolve 21 Studio on macOS 14 or later, on Apple silicon and Intel. The playback display reads user-selected viewer regions using Apple's local text recognition. It is approximate and can lag. Frame digits are replaced by dashes during detected playback. Orange indicates held duration values awaiting a fresh API response.
+**Version 2.0** includes a graphical setup assistant, saved capture areas,
+window placement, capture-rate settings, a new icon, and optional automatic
+launch and quit with DaVinci Resolve.
 
-Current version: **1.6.13**.
+[Download the 2.0 setup](https://github.com/renderender/resolve-timecode-window/releases/tag/v2.0)
+and follow the [installation guide](HOWTO.md).
 
-Double-click the display to open Settings. Settings provides capture rate,
-timecode format, capture area selection and a preview of saved areas.
-Window placement and settings persist across restarts.
+Requires macOS 14 or later. Developed for DaVinci Resolve 21 Studio.
+Supports Apple silicon and Intel. Playback uses local OCR of selected
+viewer regions, can lag, and is not frame-accurate. Orange duration values
+are held pending fresh data. Screen Recording permission is required.
 
-Download the app ZIP from this repository's Releases page.
+## Build from source
 
-Read [the setup guide](HOWTO.md) before use. Keep the selected viewer digits visible. Screen Recording permission is required. Capture regions and window placement are saved locally.
-
-## Build
-
-Install Apple's Command Line Tools, then run:
+Install Apple Command Line Tools and Python 3, then run:
 
 ```sh
 ./build.sh
-```
-
-The script builds both architectures, applies an ad-hoc signature, and produces a ZIP with the app and documentation. Builds are not Apple-notarized.
-
-Run the bridge's arithmetic tests with:
-
-```sh
+./build-setup.sh
 python3 -B src/Bridge-Pruefung.py
 ```
 
-## Project status
+The builds are ad-hoc signed and not Apple-notarized. Setup cannot grant
+macOS permissions automatically.
 
-This is a personal utility developed with AI assistance. Playback recognition, latency and multi-monitor behavior depend on the local setup. The five Python tests cover timecode arithmetic, not screen recognition or end-to-end operation in Resolve. Contributions and reproducible bug reports are welcome. Ongoing maintenance and support are not guaranteed.
+## Status and license
 
-## License and independence
+Developed with AI assistance for a personal editing workflow. Contributions
+and reproducible bug reports are welcome. Maintenance and support are not
+guaranteed. Five tests cover timecode arithmetic; screen recognition,
+installation and automatic launch depend on the local system.
 
-Project code is offered under the MIT License. See LICENSE, NOTICE.md and PRIVACY.md. This project is not affiliated with, endorsed by or supported by Blackmagic Design. DaVinci Resolve and associated product names belong to their respective owners.
+MIT License. See LICENSE, NOTICE.md and PRIVACY.md. This project is not
+affiliated with, endorsed by or supported by Blackmagic Design or Apple.
+Product names belong to their respective owners.

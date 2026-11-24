@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>local.resolve.timecodewindow.watcher</string>
+<key>CFBundleExecutable</key><string>ResolveWatcher</string>
+<key>CFBundleName</key><string>Resolve Timecode Launcher</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+<key>CFBundleVersion</key><string>30</string>
+<key>LSUIElement</key><true/>
+<key>LSMinimumSystemVersion</key><string>14.0</string>
+</dict></plist>

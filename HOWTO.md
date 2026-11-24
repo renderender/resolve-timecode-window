@@ -1,76 +1,103 @@
-# Resolve Timecode Window 1.6.13
+# Resolve Timecode Window 2.0
 
-A floating macOS display for **Master TC**, **In-Out Duration**, and **Total Duration**, in that order.
+A floating display for Master TC, In-Out Duration and Total Duration.
+Requires macOS 14 or later and DaVinci Resolve 21 Studio.
+Universal app for Apple silicon and Intel.
 
-## Install and set up
+## Install or update
 
-1. Unzip the download and drag **Resolve Timecode Window.app** into Applications. If you have an older copy running, quit it first. This build requires macOS 14 or later and supports Apple silicon and Intel. It was developed for DaVinci Resolve 21 Studio.
-2. In Resolve Studio, go to **Preferences → System → General**. Set **External scripting using** to **Local**, save, and restart Resolve if prompted. Open a timeline on the Edit page, then open the app.
-3. Right-click the floating window and choose **Set Master TC Capture Area…**. If prompted, allow **Screen & System Audio Recording** in **System Settings → Privacy & Security** and relaunch the app. Select just the timeline timecode digits above the timeline viewer. In a dual-viewer layout, use the timeline viewer on the right.
-4. Optionally choose **Set In-Out Duration Capture Area…** and mark just the number next to **DURATION** in the viewer’s IN/OUT bar. Leave the word DURATION outside the rectangle.
-5. Drag the floating window where you want it. Use the grip in the lower-right corner to resize it. The app remembers its position and capture areas. If your Resolve layout changes, mark the areas again. Keep the selected digits visible and clear of other windows.
+1. Download the **Resolve-Timecode-Window-2.0-Setup.zip** asset from the
+   GitHub release page and extract it.
+2. Open **Install Resolve Timecode Window.app** and click **Install**.
+   Setup closes the existing TC app and its launcher, installs the new
+   app in /Applications, and preserves saved settings and capture areas.
+   macOS may ask for administrator credentials. Resolve can stay open.
+3. **Refresh Screen Recording permission** is selected by default.
+   Keep it selected if updating from an ad-hoc signed build with stale
+   authorization. This resets permission for this utility only.
+4. After installation the TC app opens. If prompted, choose **Open System
+   Settings**, allow **Resolve Timecode Window** under Privacy & Security →
+   Screen & System Audio Recording, then quit and reopen the TC app.
+   macOS wording varies. If a stale entry remains, remove it and add the
+   installed app from Applications manually.
 
-The app is locally signed and has not been notarized by Apple. If macOS blocks the first launch, **Privacy & Security** may offer **Open Anyway** after that attempt. Use it if you trust the download.
+The installer and app are ad-hoc signed and not Apple-notarized. macOS
+may block their first launch. Privacy & Security may offer Open Anyway
+after a launch attempt. Only approve software you trust. The installer
+cannot grant macOS permissions on your behalf.
 
-## What the display means
+## Connect to Resolve and choose areas
 
-- **Master TC** reads the visible viewer digits during detected playback. The app shows hours, minutes and seconds with frames replaced by dashes, for example `01:04:12:--`. Screen capture and local text recognition introduce a delay, so the playback display is approximate and may lag. In the stopped state, frame digits return when Resolve's scripting API responds.
-- **In-Out Duration** can stay green during playback when the app successfully reads the marked DURATION field. It can also use Resolve's scripting API when stopped.
-- **Total Duration** comes from Resolve's scripting API. During detected playback it holds the last available value in orange. A duration can also turn orange if a fresh API response is unavailable. Green returns when the app gets a fresh value from the applicable source.
-- For interlaced projects, use **Timecode Format → 50i with Field Indicator** if automatic detection needs help. The star denotes the second field on the API-derived Master TC. Durations are shown in whole frames.
+1. In Resolve Studio, open Preferences → System → General and set
+   External scripting using to Local. Save and restart Resolve if asked.
+2. Open a timeline on the Edit page.
+3. Double-click the TC window to open Settings.
+4. Choose **Set Master TC Capture Area…** and drag a rectangle around
+   just the timeline timecode digits above the timeline viewer.
+5. Choose **Set In-Out Duration Capture Area…** and select only the
+   number next to DURATION in the viewer's IN/OUT bar.
+6. Use **Show Saved Capture Areas** to display labeled yellow outlines
+   for four seconds. Esc cancels a new selection.
 
-The app processes the marked regions locally and saves no screenshots. There is no need to enable Data Burn-In. Click the red close button to quit.
+Areas persist across app restarts. Re-select them if you move the viewer,
+change the display arrangement or change the Resolve layout. The selected
+digits must remain visible and unobscured.
 
-## Version and capture rate (1.6.13)
+## Readouts and colors
 
-Right-click the floating window and select About / Capture Info to see the
-version, build, configured capture rate and duration of the last Master TC
-capture and OCR pass. This timing is not a measurement of end-to-end latency.
+The rows are Master TC, In-Out Duration and Total Duration, from top to bottom.
+
+During detected playback the app reads the selected viewer regions using
+local text recognition. Master TC shows HH:MM:SS:--. It can lag and is
+not frame-accurate. Frame digits return when playback stops and the
+Resolve API provides a value. Scrubbing can also trigger playback detection.
+
+In-Out Duration stays green when a valid value is read from its capture
+region. Total Duration comes from the API and holds its last value in
+orange during detected playback. Orange can also mean a fresh API response
+is unavailable. Green returns after a valid update.
 
 Capture Rate offers Automatic (low load), 2, 4 or 8 reads per second.
-The selection is saved. Higher rates increase load. They are targets;
-capture and OCR may take longer. Try 4 reads per second before 8.
+Higher rates increase load. Rates are targets and depend on capture and
+recognition time. Capture Info shows version and recent recognition time;
+that timing is not an end-to-end latency measurement.
 
-In 1.6.13 the selected In-Out Duration region is read on every capture
-cycle and a new result is displayed immediately after recognition.
-Capture Rate now controls both viewer readings. More frequent duration
-recognition increases load. The old 1.5-second delay has been removed.
+For 50i, use Timecode Format → 50i with Field Indicator if automatic
+detection needs help. API-derived Master TC can mark the second field
+with a star. Durations use whole frames.
 
-Double-click the floating timecode window to open Settings.
-Settings is also available in the right-click menu. Changes are saved
-automatically. Selecting a capture area hides Settings for selection.
-Closing Settings leaves the timecode app running. Closing the main
-timecode window quits the app.
+## Start and quit with Resolve
 
-Show Saved Capture Areas outlines the saved regions in yellow for four
-seconds. The preview allows clicks through to Resolve. The Settings
-window hides while the preview is visible.
-This ad-hoc signed build may require Screen Recording permission again
-after an update. A consistent Developer ID signing identity is needed
-for a reliable distribution identity across future releases.
+Keep one copy in Applications. In Settings, enable **Launch and quit with
+DaVinci Resolve**. Approve the helper under General → Login Items &
+Extensions if macOS asks. The launcher checks for Resolve every two seconds.
+The Project Manager is sufficient; no project needs to be open.
 
-## Screen Recording permissions and the launcher
+Resolve starting opens the TC app. Resolve quitting closes it. Manually
+closing the TC window keeps it closed until the next Resolve launch.
+Disable this option before uninstalling the app.
 
-Screen Recording permission is required to read the selected viewer digits.
-The app uses ScreenCaptureKit and local text recognition. It does not save
-screenshots or record system audio, although macOS may mention audio in its
-standard permission dialog. Allow Resolve Timecode Window under System
-Settings → Privacy & Security → Screen & System Audio Recording, then
-quit and reopen the app. System wording varies by macOS version.
+The launcher is named ResolveWatcher / Resolve Timecode Launcher. It has
+no screen or audio capture code. The main TC app needs Screen Recording
+for OCR. Early development builds could attribute capture requests to the
+launcher. If a new request still names ResolveWatcher, decline it and
+report the version. Disable any old Screen Recording grant for the helper.
 
-The optional auto-launch feature is being tested in 1.7.x builds; it is
-not included in the currently published 1.6.13 app. Its helper,
-ResolveWatcher (display name Resolve Timecode Launcher), detects whether
-Resolve is running. The helper contains no screen-capture or audio-capture
-code. In early 1.7.x builds macOS could attribute the main app's screen
-capture request to ResolveWatcher because of the launch mechanism.
+## Window and privacy
 
-Build 1.7.5 separates the helper into its own app and opens the main app
-through Launch Services. If a permission dialog still names ResolveWatcher,
-decline it and report the version and launch status. If already granted,
-disable that helper's Screen Recording entry. Grant Screen Recording to
-Resolve Timecode Window. Background-helper approval under General →
-Login Items & Extensions is a separate permission used for automatic launch.
+Drag the window to position it. Resize with the lower-right grip. Monitor,
+window placement and settings persist. Settings remains above other
+windows and hides when selecting or previewing capture areas.
+Closing Settings leaves the app running. Closing the TC window quits it.
 
-Ad-hoc signed updates may need authorization again. Permission identity
-and naming on each macOS version still require testing.
+The app processes images locally, saves no screenshots and records no
+system audio. macOS may mention audio in its standard permission dialog.
+Data Burn-In is not needed. See PRIVACY.md and NOTICE.md.
+
+## Validation and limits
+
+Universal builds, signatures, archive integrity and five arithmetic tests
+are checked. The installer and automatic-launch flow received iterative
+user feedback; full end-to-end behavior across macOS versions has not
+been systematically verified. Permission retention across updates is
+not guaranteed. This community utility is provided under the MIT License.
