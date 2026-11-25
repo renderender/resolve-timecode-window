@@ -1,5 +1,7 @@
 # Resolve Timecode Window
 
+<img src="resources/AppIcon.png" alt="Resolve Timecode Window app icon" width="96">
+
 An independent macOS utility showing **Master TC**, **In-Out Duration**
 and **Total Duration** in one resizable floating window.
 
@@ -14,6 +16,14 @@ Requires macOS 14 or later. Developed for DaVinci Resolve 21 Studio.
 Supports Apple silicon and Intel. Playback uses local OCR of selected
 viewer regions, can lag, and is not frame-accurate. Orange duration values
 are held pending fresh data. Screen Recording permission is required.
+
+## Quick start
+
+1. Run the setup and grant Screen Recording access to the main Timecode Window app when prompted.
+2. Enable local external scripting in DaVinci Resolve Studio and open a timeline.
+3. Double-click the floating window to open Settings and select the areas for Master TC and In-Out Duration.
+
+See the [installation and capture-area guide](HOWTO.md) for details.
 
 ## Build from source
 
