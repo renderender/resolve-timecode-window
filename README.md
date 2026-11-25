@@ -17,6 +17,12 @@ Supports Apple silicon and Intel. Playback uses local OCR of selected
 viewer regions, can lag, and is not frame-accurate. Orange duration values
 are held pending fresh data. Screen Recording permission is required.
 
+## Screenshots
+
+<img src="docs/images/floating-window.png" alt="Floating window showing Master TC, In-Out Duration and Total Duration" width="425">
+
+<img src="docs/images/settings.png" alt="Settings for Resolve auto-launch, capture rate, timecode format, and capture areas" width="465">
+
 ## Quick start
 
 1. Run the setup and grant Screen Recording access to the main Timecode Window app when prompted.
