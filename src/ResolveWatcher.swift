@@ -22,6 +22,9 @@ final class Watcher: NSObject, NSApplicationDelegate {
     }
 
     private func checkResolve() {
+        let defaults = UserDefaults(suiteName: "local.resolve.timecodewindow")
+        defaults?.set(Date().timeIntervalSince1970, forKey: "HelperHeartbeat")
+        defaults?.synchronize()
         let pid = NSWorkspace.shared.runningApplications.first { $0.bundleIdentifier == resolveID }?.processIdentifier
         if pid != previousPID { launchedPID = nil; previousPID = pid }
         guard let pid, launchedPID != pid, !opening else { return }

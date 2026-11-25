@@ -4,7 +4,7 @@
 <key>CFBundleExecutable</key><string>ResolveWatcher</string>
 <key>CFBundleName</key><string>Resolve Timecode Launcher</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleVersion</key><string>30</string>
+<key>CFBundleVersion</key><string>31</string>
 <key>LSUIElement</key><true/>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 </dict></plist>

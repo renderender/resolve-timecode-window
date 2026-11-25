@@ -1,6 +1,7 @@
 import Cocoa
 import Foundation
 import ServiceManagement
+import CoreServices
 
 final class TimecodePanel: NSPanel {
     var optionsMenu: NSMenu?
@@ -57,7 +58,8 @@ final class ResizeGrip: NSView {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let resolveBundleID = "com.blackmagic-design.DaVinciResolve"
-    private let launchService = SMAppService.agent(plistName: "local.resolve.timecodewindow.watcher.plist")
+    private let launchService = SMAppService.loginItem(identifier: "local.resolve.timecodewindow.watcher")
+    private var launchStatusLabel: NSTextField?
     private var launchCheckbox: NSButton?
     private var sawResolve = false
     private var resolveObserver: NSObjectProtocol?
@@ -89,15 +91,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.terminate(nil)
             return
         }
+        let legacy = SMAppService.agent(plistName: "local.resolve.timecodewindow.watcher.plist")
+        if legacy.status == .enabled || legacy.status == .requiresApproval {
+            UserDefaults.standard.set(true, forKey: "LaunchWithResolve")
+            try? legacy.unregister()
+        }
         let restoringLaunch = UserDefaults.standard.bool(forKey: "RestoreLaunchAfterUpdate")
         if restoringLaunch { try? launchService.unregister() }
         if UserDefaults.standard.bool(forKey: "LaunchWithResolve"),
-           restoringLaunch || launchService.status == .notRegistered {
+           restoringLaunch || launchService.status == .notRegistered || launchService.status == .notFound {
             do {
-                try launchService.register()
+                try registerLaunchHelper()
                 UserDefaults.standard.removeObject(forKey: "RestoreLaunchAfterUpdate")
             } catch {
                 NSLog("Could not restore automatic launch: %@", error.localizedDescription)
+                UserDefaults.standard.set(registrationErrorText(error), forKey: "LaunchRegistrationError")
             }
         }
         resolveObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -237,6 +245,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 NSApp.terminate(nil)
                 return
             }
+            self.refreshLaunchStatus()
             let now = ProcessInfo.processInfo.systemUptime
             if now - self.lastUpdate > 3 { self.setDurationStale(true) }
             if self.task?.isRunning != true || now - max(self.lastUpdate, self.bridgeStarted) > 10 {
@@ -262,7 +271,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showSettings() {
         if settingsWindow == nil {
-            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 490),
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 550),
                                   styleMask: [.titled, .closable], backing: .buffered, defer: false)
             window.title = "Resolve Timecode Window — Settings"
             window.isReleasedWhenClosed = false
@@ -286,6 +295,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                   target: self, action: #selector(toggleResolveLink(_:)))
             launchCheckbox = launch
             stack.addArrangedSubview(launch)
+            let status = NSTextField(wrappingLabelWithString: "")
+            status.font = .systemFont(ofSize: 11)
+            status.textColor = .secondaryLabelColor
+            status.preferredMaxLayoutWidth = 410
+            stack.addArrangedSubview(status)
+            launchStatusLabel = status
             let rate = NSPopUpButton()
             for (value, title) in [(0, "Automatic (low load)"), (2, "2 reads / second"),
                                    (4, "4 reads / second"), (8, "8 reads / second")] {
@@ -323,11 +338,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.center()
             settingsWindow = window
         }
-        launchCheckbox?.state = launchService.status == .enabled || launchService.status == .requiresApproval ? .on : .off
+        refreshLaunchStatus()
         ratePicker?.selectItem(withTag: viewer.captureRate)
         formatPicker?.selectItem(at: min(2, max(0, UserDefaults.standard.integer(forKey: "DisplayMode"))))
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    private func registerLaunchHelper() throws {
+        let helper = Bundle.main.bundleURL
+            .appendingPathComponent("Contents/Library/LoginItems/ResolveWatcher.app")
+        guard let bundle = Bundle(url: helper),
+              bundle.bundleIdentifier == "local.resolve.timecodewindow.watcher",
+              let executable = bundle.executableURL,
+              FileManager.default.isExecutableFile(atPath: executable.path) else {
+            throw NSError(domain: "ResolveTimecodeWindow", code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "The embedded launcher is missing or invalid. Reinstall the app."])
+        }
+        let mainResult = LSRegisterURL(Bundle.main.bundleURL as CFURL, true)
+        let helperResult = LSRegisterURL(helper as CFURL, true)
+        guard mainResult == noErr && helperResult == noErr else {
+            throw NSError(domain: NSOSStatusErrorDomain,
+                code: Int(mainResult != noErr ? mainResult : helperResult),
+                userInfo: [NSLocalizedDescriptionKey: "macOS could not register the app or its launcher with Launch Services."])
+        }
+        try launchService.register()
+        UserDefaults.standard.removeObject(forKey: "LaunchRegistrationError")
+    }
+
+    private func registrationErrorText(_ error: Error) -> String {
+        let error = error as NSError
+        return "\(error.localizedDescription) [\(error.domain), \(error.code)]"
+    }
+
+    private func refreshLaunchStatus() {
+        launchCheckbox?.state = UserDefaults.standard.bool(forKey: "LaunchWithResolve") ? .on : .off
+        let heartbeat = UserDefaults.standard.double(forKey: "HelperHeartbeat")
+        let running = Date().timeIntervalSince1970 - heartbeat < 8
+        let error = UserDefaults.standard.string(forKey: "LaunchRegistrationError")
+        launchStatusLabel?.stringValue = "macOS: \(launchStatusText) • Helper: \(running ? "Running" : "No recent heartbeat")" +
+            (error.map { "\n" + $0 } ?? "")
     }
 
     private var launchStatusText: String {
@@ -352,31 +402,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func toggleResolveLink(_ sender: NSButton) {
+        let wanted = sender.state == .on
+        UserDefaults.standard.set(wanted, forKey: "LaunchWithResolve")
+        UserDefaults.standard.removeObject(forKey: "LaunchRegistrationError")
         do {
-            if sender.state == .on {
+            if wanted {
                 guard Bundle.main.bundleURL.path.hasPrefix("/Applications/") ||
                       Bundle.main.bundleURL.path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser
                         .appendingPathComponent("Applications").path + "/") else {
-                    sender.state = .off
-                    let alert = NSAlert()
-                    alert.messageText = "Move the app to Applications first"
-                    alert.informativeText = "Keep one copy in Applications, reopen it there, then enable this option."
-                    alert.runModal()
-                    return
+                    throw NSError(domain: "ResolveTimecodeWindow", code: 1,
+                        userInfo: [NSLocalizedDescriptionKey: "Move the app to Applications and reopen it there first."])
                 }
-                try launchService.register()
-                if launchService.status == .requiresApproval {
-                    explainBackgroundPermission()
+                if launchService.status != .enabled && launchService.status != .requiresApproval {
+                    try registerLaunchHelper()
                 }
-            } else {
+                if launchService.status == .requiresApproval { explainBackgroundPermission() }
+            } else if launchService.status != .notRegistered {
                 try launchService.unregister()
             }
         } catch {
-            let alert = NSAlert(error: error)
-            alert.runModal()
+            UserDefaults.standard.set(registrationErrorText(error), forKey: "LaunchRegistrationError")
+            NSAlert(error: error).runModal()
         }
-        sender.state = launchService.status == .enabled || launchService.status == .requiresApproval ? .on : .off
-        UserDefaults.standard.set(sender.state == .on, forKey: "LaunchWithResolve")
+        refreshLaunchStatus()
     }
 
     @objc private func changeSettingsRate(_ sender: NSPopUpButton) {

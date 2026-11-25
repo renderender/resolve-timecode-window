@@ -1,4 +1,4 @@
-# Resolve Timecode Window 2.0
+# Resolve Timecode Window 2.0.2
 
 A floating display for Master TC, In-Out Duration and Total Duration.
 Requires macOS 14 or later and DaVinci Resolve 21 Studio.
@@ -6,7 +6,7 @@ Universal app for Apple silicon and Intel.
 
 ## Install or update
 
-1. Download the **Resolve-Timecode-Window-2.0-Setup.zip** asset from the
+1. Download the **Resolve-Timecode-Window-2.0.2-Setup.zip** asset from the
    GitHub release page and extract it.
 2. Open **Install Resolve Timecode Window.app** and click **Install**.
    Setup closes the existing TC app and its launcher, installs the new
@@ -98,6 +98,25 @@ Data Burn-In is not needed. See PRIVACY.md and NOTICE.md.
 
 Universal builds, signatures, archive integrity and five arithmetic tests
 are checked. The installer and automatic-launch flow received iterative
-user feedback; full end-to-end behavior across macOS versions has not
+user feedback; automatic launch was confirmed by a user on their setup; behavior across macOS versions has not
 been systematically verified. Permission retention across updates is
 not guaranteed. This community utility is provided under the MIT License.
+
+## Auto-launch diagnostics in 2.0.2
+
+The launcher now uses macOS ServiceManagement's embedded login-item
+registration. In Settings, enable Launch and quit with DaVinci Resolve.
+The checkbox records your preference even if macOS approval is pending.
+
+The status below it separates macOS registration from actual helper
+activity. Wait up to eight seconds after approval.
+- macOS: Enabled + Helper: Running indicates a registered, active helper.
+- Waiting for macOS approval means permission is still needed in Login Items.
+- No recent heartbeat means the helper has not confirmed that it is running.
+Registration errors are displayed instead of silently clearing the checkbox.
+
+With Helper: Running, close the TC window, quit Resolve completely,
+then open Resolve to the Project Manager. A project does not need to be open.
+The TC app should open within a few seconds. Quitting Resolve should close it.
+Report both status fields if this fails. Do not grant Screen Recording to
+ResolveWatcher. The main TC app alone uses screen capture.

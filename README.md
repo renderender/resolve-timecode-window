@@ -3,11 +3,11 @@
 An independent macOS utility showing **Master TC**, **In-Out Duration**
 and **Total Duration** in one resizable floating window.
 
-**Version 2.0** includes a graphical setup assistant, saved capture areas,
+**Version 2.0.2** includes a graphical setup assistant, saved capture areas,
 window placement, capture-rate settings, a new icon, and optional automatic
 launch and quit with DaVinci Resolve.
 
-[Download the 2.0 setup](https://github.com/renderender/resolve-timecode-window/releases/tag/v2.0)
+[Download the 2.0.2 setup](https://github.com/renderender/resolve-timecode-window/releases/tag/v2.0.2)
 and follow the [installation guide](HOWTO.md).
 
 Requires macOS 14 or later. Developed for DaVinci Resolve 21 Studio.

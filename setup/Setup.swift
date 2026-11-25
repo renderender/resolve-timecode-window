@@ -47,7 +47,7 @@ final class Installer: NSObject, NSApplicationDelegate {
         details.frame = NSRect(x: 170, y: 55, width: 140, height: 25)
         details.isHidden = true
         root.addSubview(details)
-        let footer = label("App 2.0  ·  macOS 14+", size: 11, weight: .regular, y: 24, height: 20)
+        let footer = label("App 2.0.2  ·  macOS 14+", size: 11, weight: .regular, y: 24, height: 20)
         footer.textColor = .tertiaryLabelColor
         window.center()
         NSApp.activate(ignoringOtherApps: true)

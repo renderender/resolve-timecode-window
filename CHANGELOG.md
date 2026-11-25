@@ -1,5 +1,14 @@
 # Changes
 
+## 2.0.2
+
+- Fix automatic launch when macOS reports the helper as not found.
+- Register the embedded launcher with Launch Services before ServiceManagement.
+- Use an embedded login item and show registration status, heartbeat and errors.
+- Automatic launch confirmed by the user on their setup.
+- Cross-version macOS behavior remains dependent on local authorization.
+
+
 ## 2.0
 
 - New glass-and-metal TC icon.

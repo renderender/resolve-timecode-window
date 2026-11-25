@@ -16,4 +16,4 @@ ditto "dist/Resolve Timecode Window.app" "$app/Contents/Resources/Resolve Timeco
 codesign --force --sign - "$app"
 codesign --verify --deep --strict "$app"
 cp HOWTO.md LICENSE NOTICE.md PRIVACY.md setup-dist/
-ditto -c -k --norsrc setup-dist Resolve-Timecode-Window-2.0-Setup.zip
+ditto -c -k --norsrc setup-dist Resolve-Timecode-Window-2.0.2-Setup.zip
